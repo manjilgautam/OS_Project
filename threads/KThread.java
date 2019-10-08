@@ -275,10 +275,10 @@ public class KThread {
     public void join() {
 	Lib.debug(dbgThread, "Joining to thread: " + toString());
 	Lib.assertTrue(this != currentThread);
-/* Another thread does not have to call join, but if it is called it must be called once only, because calling it second time will make it
+/*
+This is the first part of the project. 
+ Another thread does not have to call join, but if it is called it must be called once only, because calling it second time will make it
 undefined  */
-
-
 /* 1. Things to considered: No busy waiting, return immediately, method must be called only once
 
  */
