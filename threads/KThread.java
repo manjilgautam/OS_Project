@@ -274,8 +274,27 @@ public class KThread {
      */
     public void join() {
 	Lib.debug(dbgThread, "Joining to thread: " + toString());
-
 	Lib.assertTrue(this != currentThread);
+/* Another thread does not have to call join, but if it is called it must be called once only, because calling it second time will make it
+undefined  */
+
+
+/* 1. Things to considered: No busy waiting, return immediately, method must be called only once
+
+ */
+
+	boolean status  = Machine.interrupt().disable();
+	if(joinQueue == null){
+		joinQueue = ThreadedKernel.scheduler.newThreadQueue(true);
+		joinQueue.acquire(this)
+	}
+
+	if(currentThread != this && status != statusFinished){
+		joinQueue.waitForAccess(currentThread);
+		currentThread.sleep();
+	}
+	
+	Machine.interrupt().restore(status);
 
     }
 
