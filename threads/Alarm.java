@@ -1,4 +1,8 @@
 package nachos.threads;
+import nachos.machine.*;
+import java.util.TreeSet;
+import java.util.Iterator;
+import java.util.SortedSet;
 
 import nachos.machine.*;
 
@@ -15,6 +19,7 @@ public class Alarm {
      * alarm.
      */
     public Alarm() {
+	waiting = new TreeSet<WaitingThread>();
 	Machine.timer().setInterruptHandler(new Runnable() {
 		public void run() { timerInterrupt(); }
 	    });
@@ -27,7 +32,29 @@ public class Alarm {
      * that should be run.
      */
     public void timerInterrupt() {
-	KThread.currentThread().yield();
+	//KThread.currentThread().yield();
+	 long time = Machine.timer().getTime();
+
+	if (waiting.isEmpty())
+	    return;
+
+	if (((WaitingThread) waiting.first()).time > time)
+	    return;
+
+	Lib.debug(dbgInt, "Interrupt at time = " + time);
+
+	while (!waiting.isEmpty() &&
+	       ((WaitingThread) waiting.first()).time <= time) {
+	    WaitingThread next = (WaitingThread) waiting.first();
+
+        next.thread.ready();
+	    waiting.remove(next);
+
+	    Lib.assertTrue(next.time <= time);
+	    Lib.debug(dbgInt, "  " + next.thread.getName());
+	}
+
+	Lib.debug(dbgInt, "  (Finish timerInterrupt)");
     }
 
     /**
@@ -47,7 +74,19 @@ public class Alarm {
     public void waitUntil(long x) {
 	// for now, cheat just to get something working (busy waiting is bad)
 	long wakeTime = Machine.timer().getTime() + x;
-	while (wakeTime > Machine.timer().getTime())
-	    KThread.yield();
-    }
+//	while (wakeTime > Machine.timer().getTime())
+//	    KThread.yield();
+	boolean intStatus = Machine.interrupt().disable();
+	WaitingThread toAlarm = new WaitingThread(wakeTime, KThread.currentThread());
+
+	Lib.debug(dbgInt,
+		 "THread Wait ...... " + KThread.currentThread().getName() +
+		  " until " + wakeTime);
+
+	waiting.add(toAlarm);
+
+    KThread.sleep();
+
+	Machine.interrupt().restore(intStatus);
+ }
 }
